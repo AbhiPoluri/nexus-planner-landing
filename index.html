@@ -84,24 +84,27 @@ nav a.nav-cta:hover { background: rgba(163,240,80,0.18); box-shadow: 0 0 18px rg
 /* Hero */
 .hero {
   min-height: 100dvh;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  padding: 80px 24px 60px; text-align: center;
-  position: relative; overflow: hidden;
+  display: flex; align-items: center;
+  padding: 80px 60px 60px;
+  gap: 60px; max-width: 1200px; margin: 0 auto;
+  position: relative;
 }
-.hero::before {
-  content: '';
-  position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-  width: 800px; height: 500px;
-  background: radial-gradient(ellipse at 50% 0%, rgba(163,240,80,0.07) 0%, transparent 60%);
-  pointer-events: none;
+.hero-left {
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column; align-items: flex-start;
 }
+#graph-wrap {
+  width: clamp(300px, 40vw, 500px);
+  height: clamp(300px, 40vw, 500px);
+  flex-shrink: 0; position: relative;
+}
+#graph-wrap canvas { border-radius: 12px; }
 .hero-badge {
   display: inline-flex; align-items: center; gap: 7px;
   background: var(--bg2); border: 1px solid var(--border2);
   border-radius: 100px; padding: 4px 14px 4px 8px;
   font-size: 11.5px; font-weight: 500; color: var(--text2);
-  margin-bottom: 30px; letter-spacing: 0.01em;
+  margin-bottom: 26px; letter-spacing: 0.01em;
 }
 .hero-badge .dot {
   width: 6px; height: 6px; border-radius: 50%;
@@ -117,19 +120,19 @@ nav a.nav-cta:hover { background: rgba(163,240,80,0.18); box-shadow: 0 0 18px rg
   padding: 1px 6px; border-radius: 3px;
 }
 .hero h1 {
-  font-size: clamp(42px, 7vw, 74px); font-weight: 700;
-  line-height: 1.06; letter-spacing: -0.045em; max-width: 820px; margin-bottom: 22px;
+  font-size: clamp(38px, 5.5vw, 66px); font-weight: 700;
+  line-height: 1.06; letter-spacing: -0.045em; margin-bottom: 20px;
 }
 .hero h1 .grad {
   background: linear-gradient(110deg, var(--lime) 0%, #d4f58a 40%, var(--orange) 100%);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
 }
 .hero p {
-  font-size: 16.5px; line-height: 1.7; color: var(--text2);
-  max-width: 480px; margin: 0 auto 40px;
+  font-size: 16px; line-height: 1.7; color: var(--text2);
+  max-width: 440px; margin-bottom: 36px;
 }
 .hero-actions {
-  display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;
+  display: flex; gap: 12px; flex-wrap: wrap;
 }
 .btn-primary {
   display: inline-flex; align-items: center; gap: 8px;
@@ -147,6 +150,16 @@ nav a.nav-cta:hover { background: rgba(163,240,80,0.18); box-shadow: 0 0 18px rg
   transition: border-color 0.15s, color 0.15s, transform 0.15s;
 }
 .btn-secondary:hover { border-color: var(--muted); color: var(--text); transform: translateY(-2px); }
+
+@media (max-width: 860px) {
+  .hero {
+    flex-direction: column; padding: 90px 24px 48px;
+    align-items: center; text-align: center;
+  }
+  .hero-left { align-items: center; }
+  .hero p { max-width: 100%; }
+  #graph-wrap { width: clamp(260px, 80vw, 380px); height: clamp(260px, 80vw, 380px); }
+}
 
 /* App mockup */
 .hero-mockup { margin-top: 64px; max-width: 860px; width: 100%; }
@@ -392,24 +405,32 @@ footer {
 
 <!-- Hero -->
 <section class="hero">
-  <div class="hero-badge">
-    <span class="dot"></span>
-    AI-powered · <code>Monte Carlo</code> · <code>React</code> + <code>TypeScript</code>
-  </div>
-  <h1>Project planning,<br><span class="grad">intelligently done.</span></h1>
-  <p>Decompose goals into executable plans. Visualize dependencies, simulate risk, and ship on time.</p>
-  <div class="hero-actions">
-    <a href="https://github.com/AbhiPoluri/nexus-planner" target="_blank" class="btn-primary">
-      View on GitHub
-      <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M3 10L10 3M10 3H5M10 3V8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    </a>
-    <a href="#features" class="btn-secondary">
-      See features
-      <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 2.5V10.5M6.5 10.5L3.5 7.5M6.5 10.5L9.5 7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    </a>
+  <!-- Left: text -->
+  <div class="hero-left">
+    <div class="hero-badge">
+      <span class="dot"></span>
+      AI-powered · <code>Monte Carlo</code> · <code>React</code> + <code>TypeScript</code>
+    </div>
+    <h1>Project planning,<br><span class="grad">intelligently done.</span></h1>
+    <p>Decompose goals into executable plans. Visualize dependencies, simulate risk, and ship on time.</p>
+    <div class="hero-actions">
+      <a href="https://github.com/AbhiPoluri/nexus-planner" target="_blank" class="btn-primary">
+        View on GitHub
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M3 10L10 3M10 3H5M10 3V8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+      <a href="#features" class="btn-secondary">
+        See features
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 2.5V10.5M6.5 10.5L3.5 7.5M6.5 10.5L9.5 7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+    </div>
   </div>
 
-  <!-- App mockup -->
+  <!-- Right: 3D graph -->
+  <div id="graph-wrap"></div>
+</section>
+
+<!-- App mockup (below hero) -->
+<section style="padding: 0 24px 80px; max-width: 1100px; margin: 0 auto;">
   <div class="hero-mockup">
     <div class="mockup-chrome">
       <div class="mockup-dots">
@@ -579,6 +600,163 @@ footer {
   <div class="footer-text">Built by <a href="https://abhipoluri.github.io">Abhiram Poluri</a></div>
 </footer>
 
+<!-- Three.js 3D dependency graph -->
+<script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
+<script>
+(function() {
+  const wrap = document.getElementById('graph-wrap');
+  if (!wrap) return;
+
+  const W = wrap.clientWidth || 420, H = wrap.clientHeight || 420;
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(55, W / H, 0.1, 100);
+  camera.position.set(0, 0, 5.5);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(W, H);
+  renderer.setClearColor(0x000000, 0);
+  wrap.appendChild(renderer.domElement);
+
+  // Colors
+  const LIME   = new THREE.Color(0xa3f050);
+  const ORANGE = new THREE.Color(0xf5831f);
+  const DIM    = new THREE.Color(0x2a2a2a);
+
+  // Node positions (DAG layers: 0, 1, 2, 3 with spread)
+  const nodeData = [
+    // Layer 0 (root)
+    { pos: [0, 2.2, 0],     crit: true },
+    // Layer 1
+    { pos: [-1.6, 0.9, 0.4],  crit: true },
+    { pos: [0.2, 1.1, -0.5],  crit: false },
+    { pos: [1.7, 0.8, 0.3],   crit: false },
+    // Layer 2
+    { pos: [-2.1, -0.4, -0.3], crit: true },
+    { pos: [-0.6, -0.3, 0.8],  crit: false },
+    { pos: [0.8, -0.5, -0.6],  crit: true },
+    { pos: [2.2, -0.3, 0.1],   crit: false },
+    // Layer 3
+    { pos: [-1.5, -1.6, 0.5],  crit: false },
+    { pos: [0.1, -1.8, -0.2],  crit: true },
+    { pos: [1.6, -1.5, 0.4],   crit: false },
+    // Layer 4 (leaves)
+    { pos: [-0.7, -2.6, 0.6],  crit: true },
+    { pos: [0.9, -2.7, -0.3],  crit: false },
+  ];
+
+  // Edges (indices)
+  const edges = [
+    [0,1],[0,2],[0,3],
+    [1,4],[1,5],[2,5],[2,6],[3,6],[3,7],
+    [4,8],[5,8],[5,9],[6,9],[6,10],[7,10],
+    [8,11],[9,11],[9,12],[10,12],
+  ];
+
+  // Build nodes
+  const nodeMeshes = nodeData.map((n, i) => {
+    const geo = new THREE.SphereGeometry(0.12, 16, 16);
+    const mat = new THREE.MeshBasicMaterial({ color: n.crit ? LIME : DIM });
+    const m = new THREE.Mesh(geo, mat);
+    m.position.set(...n.pos);
+    scene.add(m);
+
+    // Glow ring
+    const ringGeo = new THREE.RingGeometry(0.16, 0.22, 24);
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: n.crit ? LIME : new THREE.Color(0x444444),
+      side: THREE.DoubleSide, transparent: true, opacity: 0.25
+    });
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.position.set(...n.pos);
+    scene.add(ring);
+
+    return { mesh: m, ring, crit: n.crit, pos: new THREE.Vector3(...n.pos) };
+  });
+
+  // Build edge lines
+  const edgeLines = edges.map(([a, b]) => {
+    const pa = nodeData[a].pos, pb = nodeData[b].pos;
+    const pts = [new THREE.Vector3(...pa), new THREE.Vector3(...pb)];
+    const geo = new THREE.BufferGeometry().setFromPoints(pts);
+    const isCrit = nodeData[a].crit && nodeData[b].crit;
+    const mat = new THREE.LineBasicMaterial({
+      color: isCrit ? new THREE.Color(0x3a5a18) : new THREE.Color(0x1e1e1e),
+      transparent: true, opacity: isCrit ? 0.55 : 0.3
+    });
+    const line = new THREE.Line(geo, mat);
+    scene.add(line);
+    return { line, a, b, isCrit };
+  });
+
+  // Pulse spheres along edges
+  const pulses = edges.slice(0, 8).map(([a, b], idx) => {
+    const geo = new THREE.SphereGeometry(0.045, 8, 8);
+    const mat = new THREE.MeshBasicMaterial({
+      color: nodeData[a].crit && nodeData[b].crit ? LIME : ORANGE,
+      transparent: true, opacity: 0.9
+    });
+    const m = new THREE.Mesh(geo, mat);
+    scene.add(m);
+    return { mesh: m, a, b, t: idx * 0.11 };
+  });
+
+  // Group for rotation
+  const group = new THREE.Group();
+  scene.children.forEach(c => group.add(c));
+  // re-add
+  scene.clear();
+  scene.add(group);
+
+  // Mouse tilt
+  let mx = 0, my = 0;
+  document.addEventListener('mousemove', e => {
+    mx = (e.clientX / window.innerWidth - 0.5) * 2;
+    my = (e.clientY / window.innerHeight - 0.5) * 2;
+  });
+
+  // Resize
+  window.addEventListener('resize', () => {
+    const nw = wrap.clientWidth, nh = wrap.clientHeight;
+    camera.aspect = nw / nh;
+    camera.updateProjectionMatrix();
+    renderer.setSize(nw, nh);
+  });
+
+  let t = 0;
+  function animate() {
+    requestAnimationFrame(animate);
+    t += 0.007;
+
+    // Gentle auto-rotation + mouse tilt
+    group.rotation.y = t * 0.3 + mx * 0.25;
+    group.rotation.x = Math.sin(t * 0.2) * 0.15 + my * 0.12;
+
+    // Pulse spheres travel along edges
+    pulses.forEach(p => {
+      p.t = (p.t + 0.008) % 1;
+      const pa = nodeData[p.a].pos, pb = nodeData[p.b].pos;
+      p.mesh.position.lerpVectors(
+        new THREE.Vector3(...pa), new THREE.Vector3(...pb), p.t
+      );
+      p.mesh.material.opacity = 0.5 + 0.5 * Math.sin(p.t * Math.PI);
+    });
+
+    // Pulse critical node glow rings
+    nodeMeshes.forEach((n, i) => {
+      if (n.crit) {
+        n.ring.material.opacity = 0.12 + 0.18 * Math.abs(Math.sin(t * 1.4 + i * 0.5));
+        n.ring.rotation.z = t * 0.6 + i;
+      }
+    });
+
+    renderer.render(scene, camera);
+  }
+  animate();
+})();
+</script>
+
+<!-- Scroll reveal -->
 <script>
 (function() {
   const obs = new IntersectionObserver((entries) => {
