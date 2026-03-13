@@ -600,159 +600,204 @@ footer {
   <div class="footer-text">Built by <a href="https://abhipoluri.github.io">Abhiram Poluri</a></div>
 </footer>
 
-<!-- Three.js 3D dependency graph -->
-<script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
+<!-- Orbital animation canvas -->
 <script>
 (function() {
   const wrap = document.getElementById('graph-wrap');
   if (!wrap) return;
 
-  const W = wrap.clientWidth || 420, H = wrap.clientHeight || 420;
-  const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(55, W / H, 0.1, 100);
-  camera.position.set(0, 0, 7.2);
+  const canvas = document.createElement('canvas');
+  canvas.style.cssText = 'width:100%;height:100%;border-radius:12px;';
+  wrap.appendChild(canvas);
 
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.setSize(W, H);
-  renderer.setClearColor(0x000000, 0);
-  wrap.appendChild(renderer.domElement);
+  const dpr = Math.min(window.devicePixelRatio, 2);
+  function resize() {
+    const w = wrap.clientWidth, h = wrap.clientHeight;
+    canvas.width = w * dpr; canvas.height = h * dpr;
+    canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
+  }
+  resize();
+  window.addEventListener('resize', resize);
 
-  // Colors
-  const LIME   = new THREE.Color(0xa3f050);
-  const ORANGE = new THREE.Color(0xf5831f);
-  const DIM    = new THREE.Color(0x2a2a2a);
+  const ctx = canvas.getContext('2d');
 
-  // Node positions (DAG layers: 0, 1, 2, 3 with spread)
-  const nodeData = [
-    // Layer 0 (root)
-    { pos: [0, 2.2, 0],     crit: true },
-    // Layer 1
-    { pos: [-1.6, 0.9, 0.4],  crit: true },
-    { pos: [0.2, 1.1, -0.5],  crit: false },
-    { pos: [1.7, 0.8, 0.3],   crit: false },
-    // Layer 2
-    { pos: [-2.1, -0.4, -0.3], crit: true },
-    { pos: [-0.6, -0.3, 0.8],  crit: false },
-    { pos: [0.8, -0.5, -0.6],  crit: true },
-    { pos: [2.2, -0.3, 0.1],   crit: false },
-    // Layer 3
-    { pos: [-1.5, -1.6, 0.5],  crit: false },
-    { pos: [0.1, -1.8, -0.2],  crit: true },
-    { pos: [1.6, -1.5, 0.4],   crit: false },
-    // Layer 4 (leaves)
-    { pos: [-0.7, -2.6, 0.6],  crit: true },
-    { pos: [0.9, -2.7, -0.3],  crit: false },
+  // Node labels / tags for the orbiting items
+  const nodes = [
+    // Ring 1 (r=0.22) — 3 nodes
+    { ring: 0, angle: 0,          speed: 0.38, label: 'Dependency graph',  color: '#a3f050', type: 'lime' },
+    { ring: 0, angle: 2.1,        speed: 0.38, label: 'API rate limiting', color: '#888888', type: 'dim'  },
+    { ring: 0, angle: 4.2,        speed: 0.38, label: 'Critical path',     color: '#f5831f', type: 'orange' },
+    // Ring 2 (r=0.38) — 4 nodes
+    { ring: 1, angle: 0.8,        speed: 0.22, label: 'OAuth flow',        color: '#a3f050', type: 'lime' },
+    { ring: 1, angle: 2.4,        speed: 0.22, label: 'Risk sim',          color: '#888888', type: 'dim'  },
+    { ring: 1, angle: 4.0,        speed: 0.22, label: 'Burndown',          color: '#a3f050', type: 'lime' },
+    { ring: 1, angle: 5.4,        speed: 0.22, label: 'Sprint plan',       color: '#f5831f', type: 'orange' },
+    // Ring 3 (r=0.54) — 3 nodes
+    { ring: 2, angle: 1.2,        speed: 0.13, label: 'Velocity',          color: '#888888', type: 'dim'  },
+    { ring: 2, angle: 3.4,        speed: 0.13, label: 'Monte Carlo',       color: '#a3f050', type: 'lime' },
+    { ring: 2, angle: 5.1,        speed: 0.13, label: 'Team sync',         color: '#888888', type: 'dim'  },
   ];
 
-  // Edges (indices)
-  const edges = [
-    [0,1],[0,2],[0,3],
-    [1,4],[1,5],[2,5],[2,6],[3,6],[3,7],
-    [4,8],[5,8],[5,9],[6,9],[6,10],[7,10],
-    [8,11],[9,11],[9,12],[10,12],
-  ];
+  const RADII_FRAC = [0.22, 0.37, 0.52]; // fraction of min(W,H)/2
 
-  // Build nodes
-  const nodeMeshes = nodeData.map((n, i) => {
-    const geo = new THREE.SphereGeometry(0.10, 16, 16);
-    const mat = new THREE.MeshBasicMaterial({ color: n.crit ? LIME : DIM });
-    const m = new THREE.Mesh(geo, mat);
-    m.position.set(...n.pos);
-    scene.add(m);
-
-    // Glow ring
-    const ringGeo = new THREE.RingGeometry(0.14, 0.19, 24);
-    const ringMat = new THREE.MeshBasicMaterial({
-      color: n.crit ? LIME : new THREE.Color(0x444444),
-      side: THREE.DoubleSide, transparent: true, opacity: 0.25
-    });
-    const ring = new THREE.Mesh(ringGeo, ringMat);
-    ring.position.set(...n.pos);
-    scene.add(ring);
-
-    return { mesh: m, ring, crit: n.crit, pos: new THREE.Vector3(...n.pos) };
+  let mx = 0.5, my = 0.5;
+  wrap.addEventListener('mousemove', e => {
+    const r = wrap.getBoundingClientRect();
+    mx = (e.clientX - r.left) / r.width;
+    my = (e.clientY - r.top) / r.height;
   });
-
-  // Build edge lines
-  const edgeLines = edges.map(([a, b]) => {
-    const pa = nodeData[a].pos, pb = nodeData[b].pos;
-    const pts = [new THREE.Vector3(...pa), new THREE.Vector3(...pb)];
-    const geo = new THREE.BufferGeometry().setFromPoints(pts);
-    const isCrit = nodeData[a].crit && nodeData[b].crit;
-    const mat = new THREE.LineBasicMaterial({
-      color: isCrit ? new THREE.Color(0x3a5a18) : new THREE.Color(0x1e1e1e),
-      transparent: true, opacity: isCrit ? 0.55 : 0.3
-    });
-    const line = new THREE.Line(geo, mat);
-    scene.add(line);
-    return { line, a, b, isCrit };
-  });
-
-  // Pulse spheres along edges
-  const pulses = edges.slice(0, 8).map(([a, b], idx) => {
-    const geo = new THREE.SphereGeometry(0.038, 8, 8);
-    const mat = new THREE.MeshBasicMaterial({
-      color: nodeData[a].crit && nodeData[b].crit ? LIME : ORANGE,
-      transparent: true, opacity: 0.9
-    });
-    const m = new THREE.Mesh(geo, mat);
-    scene.add(m);
-    return { mesh: m, a, b, t: idx * 0.11 };
-  });
-
-  // Group for rotation
-  const group = new THREE.Group();
-  scene.children.forEach(c => group.add(c));
-  // re-add
-  scene.clear();
-  scene.add(group);
-
-  // Mouse tilt
-  let mx = 0, my = 0;
-  document.addEventListener('mousemove', e => {
-    mx = (e.clientX / window.innerWidth - 0.5) * 2;
-    my = (e.clientY / window.innerHeight - 0.5) * 2;
-  });
-
-  // Resize
-  window.addEventListener('resize', () => {
-    const nw = wrap.clientWidth, nh = wrap.clientHeight;
-    camera.aspect = nw / nh;
-    camera.updateProjectionMatrix();
-    renderer.setSize(nw, nh);
-  });
+  wrap.addEventListener('mouseleave', () => { mx = 0.5; my = 0.5; });
 
   let t = 0;
-  function animate() {
-    requestAnimationFrame(animate);
-    t += 0.007;
 
-    // Gentle auto-rotation + mouse tilt
-    group.rotation.y = t * 0.3 + mx * 0.25;
-    group.rotation.x = Math.sin(t * 0.2) * 0.15 + my * 0.12;
+  function draw() {
+    requestAnimationFrame(draw);
+    t += 0.012;
 
-    // Pulse spheres travel along edges
-    pulses.forEach(p => {
-      p.t = (p.t + 0.008) % 1;
-      const pa = nodeData[p.a].pos, pb = nodeData[p.b].pos;
-      p.mesh.position.lerpVectors(
-        new THREE.Vector3(...pa), new THREE.Vector3(...pb), p.t
-      );
-      p.mesh.material.opacity = 0.5 + 0.5 * Math.sin(p.t * Math.PI);
+    const W = canvas.width, H = canvas.height;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const vw = W / dpr, vh = H / dpr;
+    ctx.clearRect(0, 0, vw, vh);
+
+    // Center with subtle mouse parallax
+    const cx = vw / 2 + (mx - 0.5) * 12;
+    const cy = vh / 2 + (my - 0.5) * 12;
+    const minR = Math.min(vw, vh) / 2;
+
+    // Draw orbital rings
+    RADII_FRAC.forEach((rf, i) => {
+      const r = rf * minR * 1.88;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(163,240,80,${0.07 + i * 0.02})`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
     });
 
-    // Pulse critical node glow rings
-    nodeMeshes.forEach((n, i) => {
-      if (n.crit) {
-        n.ring.material.opacity = 0.12 + 0.18 * Math.abs(Math.sin(t * 1.4 + i * 0.5));
-        n.ring.rotation.z = t * 0.6 + i;
+    // Draw center glow
+    const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, minR * 0.32);
+    grd.addColorStop(0, 'rgba(163,240,80,0.14)');
+    grd.addColorStop(1, 'rgba(163,240,80,0)');
+    ctx.beginPath();
+    ctx.arc(cx, cy, minR * 0.32, 0, Math.PI * 2);
+    ctx.fillStyle = grd;
+    ctx.fill();
+
+    // Center badge
+    const cr = minR * 0.145;
+    ctx.beginPath();
+    ctx.arc(cx, cy, cr, 0, Math.PI * 2);
+    ctx.fillStyle = '#111111';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(cx, cy, cr, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(163,240,80,0.5)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Center text
+    ctx.fillStyle = '#a3f050';
+    ctx.font = `bold ${Math.round(cr * 0.72)}px JetBrains Mono, monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('N', cx, cy - cr * 0.08);
+    ctx.fillStyle = '#555';
+    ctx.font = `${Math.round(cr * 0.34)}px Inter, sans-serif`;
+    ctx.fillText('nexus', cx, cy + cr * 0.58);
+
+    // Draw nodes
+    nodes.forEach(n => {
+      const rf = RADII_FRAC[n.ring];
+      const r = rf * minR * 1.88;
+      const a = n.angle + t * n.speed;
+      const nx = cx + Math.cos(a) * r;
+      const ny = cy + Math.sin(a) * r;
+      const nr = minR * (n.type === 'dim' ? 0.048 : 0.060);
+
+      // Line from center to node (faint)
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(nx, ny);
+      ctx.strokeStyle = n.type === 'lime'
+        ? 'rgba(163,240,80,0.08)'
+        : n.type === 'orange'
+          ? 'rgba(245,131,31,0.08)'
+          : 'rgba(255,255,255,0.03)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Node glow
+      if (n.type !== 'dim') {
+        const glow = ctx.createRadialGradient(nx, ny, 0, nx, ny, nr * 2.8);
+        const gc = n.type === 'lime' ? '163,240,80' : '245,131,31';
+        glow.addColorStop(0, `rgba(${gc},0.28)`);
+        glow.addColorStop(1, `rgba(${gc},0)`);
+        ctx.beginPath();
+        ctx.arc(nx, ny, nr * 2.8, 0, Math.PI * 2);
+        ctx.fillStyle = glow;
+        ctx.fill();
       }
-    });
 
-    renderer.render(scene, camera);
+      // Node circle
+      ctx.beginPath();
+      ctx.arc(nx, ny, nr, 0, Math.PI * 2);
+      ctx.fillStyle = n.type === 'lime' ? '#a3f050'
+        : n.type === 'orange' ? '#f5831f'
+        : '#2a2a2a';
+      ctx.fill();
+      ctx.strokeStyle = n.type === 'lime' ? 'rgba(163,240,80,0.6)'
+        : n.type === 'orange' ? 'rgba(245,131,31,0.6)'
+        : 'rgba(255,255,255,0.08)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Label tag
+      const pulse = 0.85 + 0.15 * Math.sin(t * 2 + n.angle);
+      ctx.globalAlpha = pulse;
+      const fs = Math.max(9, Math.round(minR * 0.075));
+      ctx.font = `500 ${fs}px Inter, sans-serif`;
+      ctx.textAlign = 'center';
+      const tw = ctx.measureText(n.label).width;
+      const th = fs * 1.4;
+      const lx = nx, ly = ny + nr + th * 0.5 + 5;
+      const pad = 7;
+      const lbg = n.type === 'lime' ? 'rgba(163,240,80,0.10)'
+        : n.type === 'orange' ? 'rgba(245,131,31,0.10)'
+        : 'rgba(255,255,255,0.04)';
+      const lborder = n.type === 'lime' ? 'rgba(163,240,80,0.25)'
+        : n.type === 'orange' ? 'rgba(245,131,31,0.25)'
+        : 'rgba(255,255,255,0.06)';
+
+      ctx.beginPath();
+      const lrx = lx - tw / 2 - pad, lry = ly - th * 0.55;
+      const lrw = tw + pad * 2, lrh = th;
+      const lr = 5;
+      ctx.moveTo(lrx + lr, lry);
+      ctx.lineTo(lrx + lrw - lr, lry);
+      ctx.quadraticCurveTo(lrx + lrw, lry, lrx + lrw, lry + lr);
+      ctx.lineTo(lrx + lrw, lry + lrh - lr);
+      ctx.quadraticCurveTo(lrx + lrw, lry + lrh, lrx + lrw - lr, lry + lrh);
+      ctx.lineTo(lrx + lr, lry + lrh);
+      ctx.quadraticCurveTo(lrx, lry + lrh, lrx, lry + lrh - lr);
+      ctx.lineTo(lrx, lry + lr);
+      ctx.quadraticCurveTo(lrx, lry, lrx + lr, lry);
+      ctx.closePath();
+      ctx.fillStyle = lbg;
+      ctx.fill();
+      ctx.strokeStyle = lborder;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      ctx.fillStyle = n.type === 'lime' ? '#a3f050'
+        : n.type === 'orange' ? '#f5831f'
+        : '#555555';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(n.label, lx, ly);
+      ctx.globalAlpha = 1;
+    });
   }
-  animate();
+  draw();
+
 })();
 </script>
 
