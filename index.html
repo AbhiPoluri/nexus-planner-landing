@@ -610,7 +610,7 @@ footer {
   const W = wrap.clientWidth || 420, H = wrap.clientHeight || 420;
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(55, W / H, 0.1, 100);
-  camera.position.set(0, 0, 5.5);
+  camera.position.set(0, 0, 7.2);
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -655,14 +655,14 @@ footer {
 
   // Build nodes
   const nodeMeshes = nodeData.map((n, i) => {
-    const geo = new THREE.SphereGeometry(0.12, 16, 16);
+    const geo = new THREE.SphereGeometry(0.10, 16, 16);
     const mat = new THREE.MeshBasicMaterial({ color: n.crit ? LIME : DIM });
     const m = new THREE.Mesh(geo, mat);
     m.position.set(...n.pos);
     scene.add(m);
 
     // Glow ring
-    const ringGeo = new THREE.RingGeometry(0.16, 0.22, 24);
+    const ringGeo = new THREE.RingGeometry(0.14, 0.19, 24);
     const ringMat = new THREE.MeshBasicMaterial({
       color: n.crit ? LIME : new THREE.Color(0x444444),
       side: THREE.DoubleSide, transparent: true, opacity: 0.25
@@ -691,7 +691,7 @@ footer {
 
   // Pulse spheres along edges
   const pulses = edges.slice(0, 8).map(([a, b], idx) => {
-    const geo = new THREE.SphereGeometry(0.045, 8, 8);
+    const geo = new THREE.SphereGeometry(0.038, 8, 8);
     const mat = new THREE.MeshBasicMaterial({
       color: nodeData[a].crit && nodeData[b].crit ? LIME : ORANGE,
       transparent: true, opacity: 0.9
